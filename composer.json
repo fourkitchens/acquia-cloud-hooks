@@ -1,0 +1,11 @@
+{
+  "name": "fourkitchens/acquia-cloud-hooks",
+  "require": {
+    "composer/installers": "^2.0.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true
+    }
+  }
+}
