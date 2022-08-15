@@ -14,18 +14,18 @@ echo "Deploying $DEPLOY_ENV"
 
 echo ''
 echo 'Updating database...'
-../bin/drush updatedb -y
+../vendor/bin/drush updatedb -y
 
 echo ''
 echo 'Rebuilding cache...'
-../bin/drush cache-rebuild
+../vendor/bin/drush cache-rebuild
 
 echo ''
 echo 'Importing configuration...'
-../bin/drush config-import -y
+../vendor/bin/drush config-import -y
 
 echo ''
 echo 'Rebuilding cache...'
-../bin/drush cache-rebuild
+../vendor/bin/drush cache-rebuild
 
 echo ''
