@@ -42,7 +42,7 @@ ACQUIA_CANONICAL_ENV="prod"
 ACQUIA_DATABASE_NAME="$site"
 
 # Grab Keys
-# @see https://docs.acquia.com/acquia-cloud/files/system-files/private
+# @see https://docs.acquia.com/acquia-cloud-platform/manage-apps/files/system-files/private
 source /mnt/gfs/home/$site/$target_env/nobackup/bashkeys.sh
 
 if [ -z "$ACQUIACLI_KEY" ] || [ -z "$ACQUIACLI_SECRET" ]
@@ -69,7 +69,9 @@ if [ "$target_env" != "$ACQUIA_CANONICAL_ENV" ]; then
   echo "Sync DB from $ACQUIA_CANONICAL_ENV to $target_env"
   TMP_FILE=$(mktemp --suffix=.json)
   $acli api:environments:database-copy "$site.$target_env" "$ACQUIA_DATABASE_NAME" "$site.$ACQUIA_CANONICAL_ENV" > "$TMP_FILE"
-  ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE"
+  ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE" &
+  DB_PID=$!
+  echo "Job running as pid: $DB_PID"
 
   echo "Sync files from $ACQUIA_CANONICAL_ENV to $target_env"
   CANONICAL_UUID="$( ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/get-env-uuid.php" "$site.$ACQUIA_CANONICAL_ENV" )"
@@ -78,8 +80,12 @@ if [ "$target_env" != "$ACQUIA_CANONICAL_ENV" ]; then
   else
     TMP_FILE=$(mktemp --suffix=.json)
     $acli api:environments:file-copy "$site.$target_env" --source "$CANONICAL_UUID" > "$TMP_FILE"
-    ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE"
+    ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE" &
+    FILES_PID=$!
+    echo "Job running as pid: $FILES_PID"
   fi
+  wait "$DB_PID"
+  wait "$FILES_PID"
 else
   # Backing up current environment.
   echo "Backup $target_env DB"
