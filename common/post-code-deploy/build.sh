@@ -12,10 +12,6 @@
 
 site="$1"
 target_env="$2"
-source_branch="$3"
-deployed_tag="$4"
-repo_url="$5"
-repo_type="$6"
 
 # Do not interfere with the RA environment
 if [ "$target_env" == "ra" ]; then
@@ -55,55 +51,54 @@ then
   exit 1;
 fi
 
-if [ -f /mnt/gfs/home/$site/$target_env/nobackup/skipbuild ]
-then
+if [ -f "/mnt/gfs/home/$site/$target_env/nobackup/skipbuild" ]; then
   echo "The skip file was detected. You must run backups and build commands manually."
   exit 0;
 fi
-
-pushd $( dirname $0 )/../../../
+PROJECT_ROOT="$( dirname "$0" )/../../.."
+pushd "$PROJECT_ROOT" || exit 1
 acli_path="$(realpath ./vendor/bin/acli)"
 acli="$acli_path -n"
-HELPER_SCRIPT_PATH="$( dirname $0)/../../helper"
+HELPER_SCRIPT_PATH="$( dirname "$0" )/../../helper"
 
 # Login to the Acquia API.
-$acli auth:login -k $ACQUIACLI_KEY -s $ACQUIACLI_SECRET
+$acli auth:login -k "$ACQUIACLI_KEY" -s "$ACQUIACLI_SECRET"
 
 # If we aren't on the cononical env, pull in cononical's db and files
-if [ "$target_env" != "$ACQUIA_CANONICAL_ENV" ]
-then
+if [ "$target_env" != "$ACQUIA_CANONICAL_ENV" ]; then
   echo "Sync DB from $ACQUIA_CANONICAL_ENV to $target_env"
   TMP_FILE=$(mktemp --suffix=.json)
-  $acli api:environments:database-copy $site.$target_env $ACQUIA_DATABASE_NAME $site.$ACQUIA_CANONICAL_ENV > $TMP_FILE
-  ACLI_COMMAND="$acli" php $HELPER_SCRIPT_PATH/wait-for-notification.php $TMP_FILE
+  $acli api:environments:database-copy "$site.$target_env" "$ACQUIA_DATABASE_NAME" "$site.$ACQUIA_CANONICAL_ENV" > "$TMP_FILE"
+  ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE"
+
   echo "Sync files from $ACQUIA_CANONICAL_ENV to $target_env"
-  CANONICAL_UUID="$( ACLI_COMMAND="$acli" php $HELPER_SCRIPT_PATH/get-env-uuid.php $site.$ACQUIA_CANONICAL_ENV )"
+  CANONICAL_UUID="$( ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/get-env-uuid.php" "$site.$ACQUIA_CANONICAL_ENV" )"
   if [ -z "$CANONICAL_UUID" ]; then
     echo "Couldn't sync over files because we couldn't get the canonical envs uuid."
   else
     TMP_FILE=$(mktemp --suffix=.json)
-    $acli api:environments:file-copy $site.$target_env --source $CANONICAL_UUID > $TMP_FILE
-    ACLI_COMMAND="$acli" php $HELPER_SCRIPT_PATH/wait-for-notification.php $TMP_FILE
+    $acli api:environments:file-copy "$site.$target_env" --source "$CANONICAL_UUID" > "$TMP_FILE"
+    ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE"
   fi
 else
   # Backing up current environment.
   echo "Backup $target_env DB"
   TMP_FILE=$(mktemp --suffix=.json)
-  $acli api:environments:database-backup-create $site.$target_env $ACQUIA_DATABASE_NAME > $TMP_FILE
-  ACLI_COMMAND="$acli" php $HELPER_SCRIPT_PATH/wait-for-notification.php $TMP_FILE
+  $acli api:environments:database-backup-create "$site.$target_env $ACQUIA_DATABASE_NAME" > "$TMP_FILE"
+  ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE"
 fi
 
-popd
+popd || exit 1
 
 echo "Starting Build for $target_env"
 
 # Every environment builds like if it was production.
 
-if [[ -f "$( dirname $0)/../../../scripts/custom/deploy.sh" ]]; then
+if [[ -f "$PROJECT_ROOT/scripts/custom/deploy.sh" ]]; then
 echo "Running custom deployment script."
-  $( dirname $0)/../../../scripts/custom/deploy.sh $target_env
+  "$PROJECT_ROOT/scripts/custom/deploy.sh" "$target_env"
 else
-  $HELPER_SCRIPT_PATH/deploy.sh $target_env
+  "$HELPER_SCRIPT_PATH/deploy.sh" "$target_env"
 fi
 
 echo "Ending Build for $target_env"
