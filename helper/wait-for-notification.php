@@ -16,9 +16,9 @@ if (isset($argc)) {
       sleep($delay);
       $notification_json = shell_exec($acli . ' api:notifications:find ' . $notification_id);
       $notification = json_decode($notification_json, TRUE);
-      echo "Task: " . $message . "Progress: " . $notification['progress'] . "% Status: " . $notification['status'] . "\n";
-    } while ($notification['status'] != 'completed' && ($start + $max_timeout) > time());
-    if (($start + $max_timeout) > time()) {
+      echo "Task: " . $message . "\nProgress: " . $notification['progress'] . "% Status: " . $notification['status'] . "\n";
+    } while ($notification['status'] != 'completed' && time() <= ($start + $max_timeout));
+    if (time() > ($start + $max_timeout)) {
       echo "Max Timeout Reached!!!\n";
     }
   }
