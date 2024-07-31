@@ -80,12 +80,12 @@ if [ "$target_env" != "$ACQUIA_CANONICAL_ENV" ]; then
   else
     TMP_FILE=$(mktemp --suffix=.json)
     $acli api:environments:file-copy "$site.$target_env" --source "$CANONICAL_UUID" > "$TMP_FILE"
-    ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE"
+    ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE" &
     FILES_PID=$!
     echo "Job running as pid: $FILES_PID"
   fi
-  wait $DB_PID
-  wait $FILES_PID
+  wait "$DB_PID"
+  wait "$FILES_PID"
 else
   # Backing up current environment.
   echo "Backup $target_env DB"
