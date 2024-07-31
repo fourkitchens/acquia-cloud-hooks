@@ -42,7 +42,7 @@ ACQUIA_CANONICAL_ENV="prod"
 ACQUIA_DATABASE_NAME="$site"
 
 # Grab Keys
-# @see https://docs.acquia.com/acquia-cloud/files/system-files/private
+# @see https://docs.acquia.com/acquia-cloud-platform/manage-apps/files/system-files/private
 source /mnt/gfs/home/$site/$target_env/nobackup/bashkeys.sh
 
 if [ -z "$ACQUIACLI_KEY" ] || [ -z "$ACQUIACLI_SECRET" ]
