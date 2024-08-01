@@ -10,16 +10,16 @@ if (isset($argc)) {
     if (!empty($json['_links']) && !empty($json['_links']['notification']) && !empty($json['_links']['notification']['href'])) {
       $notification_id = basename($json['_links']['notification']['href']);
       $message = $json['message'] ?? $message;
-    }
-    $start = time();
-    do {
-      sleep($delay);
-      $notification_json = shell_exec($acli . ' api:notifications:find ' . $notification_id);
-      $notification = json_decode($notification_json, TRUE);
-      echo "Task: " . $message . "\nProgress: " . $notification['progress'] . "% Status: " . $notification['status'] . "\n";
-    } while ($notification['status'] != 'completed' && time() <= ($start + $max_timeout));
-    if (time() > ($start + $max_timeout)) {
-      echo "Max Timeout Reached!!!\n";
+      $start = time();
+      do {
+        sleep($delay);
+        $notification_json = shell_exec($acli . ' api:notifications:find ' . $notification_id);
+        $notification = json_decode($notification_json, TRUE);
+        echo "Task: " . $message . "\nProgress: " . $notification['progress'] . "% Status: " . $notification['status'] . "\n";
+      } while ($notification['status'] != 'completed' && time() <= ($start + $max_timeout));
+      if (time() > ($start + $max_timeout)) {
+        echo "Max Timeout Reached!!!\n";
+      }
     }
   }
 }

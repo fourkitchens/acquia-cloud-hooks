@@ -107,4 +107,16 @@ else
   "$HELPER_SCRIPT_PATH/deploy.sh" "$target_env"
 fi
 
+pushd "$PROJECT_ROOT" || exit 1
+
+echo "Finding domains that use Varnish."
+DOMAINS="$( ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/get-env-domains.php" "$site.$target_env" )"
+echo "Clearing Varnish cache for $DOMAINS"
+# DOMAINS is an argument list. Purposfully not quoting it.
+TMP_FILE=$(mktemp --suffix=.json)
+$acli api:environments:clear-caches "$site.$target_env" $DOMAINS > "$TMP_FILE"
+ACLI_MAX_TIMEOUT=60 ACLI_DELAY=5 ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE"
+
+popd || exit 1
+
 echo "Ending Build for $target_env"
