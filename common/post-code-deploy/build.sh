@@ -90,7 +90,7 @@ else
   # Backing up current environment.
   echo "Backup $target_env DB"
   TMP_FILE=$(mktemp --suffix=.json)
-  $acli api:environments:database-backup-create "$site.$target_env $ACQUIA_DATABASE_NAME" > "$TMP_FILE"
+  $acli api:environments:database-backup-create "$site.$target_env" "$ACQUIA_DATABASE_NAME" > "$TMP_FILE"
   ACLI_COMMAND="$acli" php "$HELPER_SCRIPT_PATH/wait-for-notification.php" "$TMP_FILE"
 fi
 
