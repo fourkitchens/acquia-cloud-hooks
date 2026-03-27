@@ -25,6 +25,10 @@ echo 'Importing configuration...'
 ../vendor/bin/drush config-import -y
 
 echo ''
+echo 'Importing configuration (second pass)...'
+../vendor/bin/drush config-import -y
+
+echo ''
 echo 'Rebuilding cache...'
 ../vendor/bin/drush cache-rebuild
 
