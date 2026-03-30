@@ -1,30 +1,32 @@
 # Acquia Cloud Hooks
 
-Automated deployment hooks for Acquia Cloud Platform. These hooks run in response to code deployments and commits, handling database/file synchronization, Drupal deployment steps, and Varnish cache clearing.
+Automated deployment hooks for Acquia Cloud Platform. These hooks run in response to code deployments and commits, handling Drupal deployment steps and Varnish cache clearing. The `post-code-deploy` hook also handles database/file synchronization.
 
 ## How It Works
 
-Acquia Cloud Hooks are shell scripts that Acquia automatically executes when certain events occur in your environment. This package provides two hooks:
+Acquia Cloud Hooks are shell scripts that Acquia automatically executes when certain events occur in your environment. This package provides two hooks with different responsibilities:
 
 | Hook | Trigger | Script |
 |---|---|---|
 | `post-code-deploy` | A tag or branch is deployed to an environment | `common/post-code-deploy/build.sh` |
 | `post-code-update` | A commit is pushed to a branch currently deployed to an environment | `common/post-code-update/build.sh` |
 
-> **Note:** `common/post-code-update/build.sh` is a symlink pointing to `common/post-code-deploy/build.sh`. Both hooks run the exact same script — any changes made to `post-code-deploy/build.sh` are automatically reflected in `post-code-update`.
+## What Each Hook Does
 
-## What the Build Script Does
+Both hooks share these steps:
 
-On each deployment, the build script:
+1. **Skip the RA environment** — the Release Agent environment is always bypassed.
+2. **Check for a `skipbuild` file** — if present, exits immediately (see below).
+3. **Authenticate** with the Acquia Cloud API via ACLI.
+4. **Run deployment commands** via `helper/deploy.sh` (or a custom script if one exists).
+5. **Clear Varnish caches** for all active domains in the environment.
 
-1. **Skips the RA environment** — the Release Agent environment is always bypassed.
-2. **Checks for a `skipbuild` file** — if present, exits immediately (see below).
-3. **Authenticates** with the Acquia Cloud API via ACLI.
-4. **Syncs data** from the canonical environment (default: `prod`):
-   - On non-canonical environments: copies the database and files from `prod` (runs concurrently).
-   - On the canonical environment: creates a database backup before deploying.
-5. **Runs deployment commands** via `helper/deploy.sh` (or a custom script if one exists).
-6. **Clears Varnish caches** for all active domains in the environment.
+### post-code-deploy only
+
+In addition to the shared steps, `post-code-deploy` also **syncs data** from the canonical environment (default: `prod`):
+
+- On non-canonical environments: copies the database and files from `prod` (runs concurrently).
+- On the canonical environment: creates a database backup before deploying.
 
 ### Default Deploy Script
 
@@ -69,7 +71,7 @@ Generate API tokens at: https://docs.acquia.com/cloud-platform/develop/api/auth/
 
 ### 3. Configuration Variables
 
-The following variables can be adjusted at the top of `common/post-code-deploy/build.sh`:
+**`common/post-code-deploy/build.sh`** (data sync variables):
 
 | Variable | Default | Description |
 |---|---|---|
@@ -77,6 +79,8 @@ The following variables can be adjusted at the top of `common/post-code-deploy/b
 | `ACQUIA_DATABASE_NAME` | `$site` | Database name to backup/copy |
 | `ACLI_MAX_TIMEOUT` | `600` | Max seconds to wait for async API operations |
 | `ACLI_DELAY` | `15` | Seconds between API status checks |
+
+These variables are not present in `post-code-update` as it does not perform data sync.
 
 ## Skipping a Build
 
